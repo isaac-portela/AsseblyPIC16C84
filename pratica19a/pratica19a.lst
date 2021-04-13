@@ -1,0 +1,207 @@
+gpasm-0.10.1 alpha              C:\Users\isaac\OneDrive\Documents/PIC Development Studio projects/pratica19a/pratica19a.asm3-24-2021  17:03:10          PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00001 ; Template file for PIC16F84 (pic16f84 template.asm)
+               00002 ;                ________
+               00003 ;               |        |
+               00004 ;             <-| A0  B0 |-< 
+               00005 ;             <-| A1  B1 |-< 
+               00006 ;             <-| A2  B2 |-< 
+               00007 ;             <-| A3  B3 |-<
+               00008 ;             <-| A4  B4 |-< 
+               00009 ;               |     B5 |-<
+               00010 ;               |     B6 |-<
+               00011 ;               |     B7 |-<
+               00012 ;               |________|
+               00013 ;
+               00014 
+  00000001     00015 r               equ     0x01
+  00000000     00016 w               equ     0x00
+               00017 
+  00000000     00018 c               equ     0x00
+  00000001     00019 dc              equ     0x01
+  00000002     00020 z               equ     0x02
+  00000005     00021 RP0             equ     0x05
+               00022 
+               00023 ; Special function register in Bank 0
+  00000000     00024 INDF            equ     0x00
+  00000001     00025 TMR0            equ     0x01
+  00000003     00026 Status          equ     0x03
+  00000004     00027 FSR             equ     0x04
+  00000005     00028 PortA           equ     0x05
+  00000006     00029 PortB           equ     0x06
+  0000000B     00030 Intcon          equ     0x0B
+               00031 
+               00032 ; Special function register in Bank 1
+  00000001     00033 OptionR         equ     0x01
+  00000005     00034 TrisA           equ     0x05
+  00000006     00035 TrisB           equ     0x06
+               00036 
+               00037 
+               00038 ; Interrupt bits
+  00000007     00039 GIE             equ     7       ;Global Interrupt enabled/disable
+  00000004     00040 INTE            equ     4       ;RB0 interrupten enabled/disable
+  00000001     00041 INTF            equ     1       ;RB0 interrupten has occured
+  00000005     00042 T0IE            equ     5       ;TMR0 int enabled/disable
+  00000002     00043 T0IF            equ     2       ;TMR0 int has occured
+               00044 
+               00045 ; EEPROM registers
+  00000008     00046 EEcon1          equ     0x08    ;EEPROM control register 1
+  00000009     00047 EEcon2          equ     0x09    ;EEPROM control register 1
+  00000008     00048 EEdata          equ     0x08    ;EEPROM data register
+  00000009     00049 EEadr           equ     0x09    ;EEPROM address register
+               00050 
+               00051 ; EEProm bits
+  00000000     00052 RD              equ     0x00
+  00000001     00053 WR              equ     0x01
+  00000002     00054 WREN            equ     0x02
+gpasm-0.10.1 alpha              C:\Users\isaac\OneDrive\Documents/PIC Development Studio projects/pratica19a/pratica19a.asm3-24-2021  17:03:10          PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00055 
+               00056 ; File registers
+  0000000C     00057 w_temp          equ     0x0C    ; register used in interrupt handling
+  0000000D     00058 status_temp     equ     0x0D
+               00059 
+               00060 
+               00061 
+               00062 ;-------------------------------------------------------------------------------
+               00063 
+Warning [205] : Found directive in column 1.
+0000           00064 org     0x00
+0000 2820      00065         goto    init
+               00066 
+               00067 ;-------------------------------------------------------------------------------
+               00068 ; Interrupt handling
+               00069 ;-------------------------------------------------------------------------------
+Warning [205] : Found directive in column 1.
+0004           00070 org     0x04
+               00071 
+0004 008C      00072 push    movwf   w_temp                  ;save w & status 
+0005 0E03      00073         swapf   Status,W
+0006 008D      00074         movwf   status_temp
+               00075         
+               00076 
+0007 0E0D      00077 pop     swapf   status_temp,W           ; restore w & status
+0008 0083      00078         movwf   Status
+0009 0E8C      00079         swapf   w_temp, r
+000A 0E0C      00080         swapf   w_temp, W
+000B 0009      00081         retfie
+               00082 
+               00083 
+               00084 ;-------------------------------------------------------------------------------
+               00085 ; Init code
+               00086 ;-------------------------------------------------------------------------------
+Warning [205] : Found directive in column 1.
+0020           00087 org     0x20
+               00088 
+0020 1683      00089 init    bsf     Status,RP0
+0021 30FE      00090         movlw   b'11111110'             ;configure PortB
+0022 0086      00091         movwf   TrisB
+0023 3001      00092         movlw   b'00000001'             ;configure PortA
+0024 0085      00093         movwf   TrisA
+0025 1283      00094         bcf     Status,RP0
+               00095 
+0026 2827      00096         goto    main
+               00097 
+               00098 ;------------------------------------------------------------------------------
+               00099 ; Main loop
+               00100 ;------------------------------------------------------------------------------
+               00101 
+0027           00102 main    
+0027 1805      00103         btfsc PortA,0
+0028 282A      00104         goto acenderLd
+0029 282D      00105         goto apagarLd
+gpasm-0.10.1 alpha              C:\Users\isaac\OneDrive\Documents/PIC Development Studio projects/pratica19a/pratica19a.asm3-24-2021  17:03:10          PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00106 
+               00107 
+002A           00108 acenderLd       
+002A 1406      00109         bsf PortB, 0
+002B 2030      00110         call atraso
+002C 2827      00111         goto main  
+               00112         
+002D           00113 apagarLd
+002D 1006      00114         bcf PortB, 0
+002E 2030      00115         call atraso
+002F 2827      00116         goto main  
+               00117 
+0030           00118 atraso
+0030 0000      00119         nop
+0031 0000      00120         nop
+0032 0000      00121         nop
+0033 0000      00122         nop
+0034 0000      00123         nop
+0035 0008      00124         return 
+               00125         
+               00126 ;-----------------------------------------------------------------------------
+               00127 
+gpasm-0.10.1 alpha              C:\Users\isaac\OneDrive\Documents/PIC Development Studio projects/pratica19a/pratica19a.asm3-24-2021  17:03:10          PAGE  4
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+EEadr                             00000009
+EEcon1                            00000008
+EEcon2                            00000009
+EEdata                            00000008
+FSR                               00000004
+GIE                               00000007
+INDF                              00000000
+INTE                              00000004
+INTF                              00000001
+Intcon                            0000000B
+OptionR                           00000001
+PortA                             00000005
+PortB                             00000006
+RD                                00000000
+RP0                               00000005
+Status                            00000003
+T0IE                              00000005
+T0IF                              00000002
+TMR0                              00000001
+TrisA                             00000005
+TrisB                             00000006
+WR                                00000001
+WREN                              00000002
+__16F84                           00000001
+acenderLd                         0000002A
+apagarLd                          0000002D
+atraso                            00000030
+c                                 00000000
+dc                                00000001
+init                              00000020
+main                              00000027
+pop                               00000007
+push                              00000004
+r                                 00000001
+status_temp                       0000000D
+w                                 00000000
+w_temp                            0000000C
+z                                 00000002
+
+
+MEMORY USAGE MAP ('X' = Used,  '-' = Unused)
+
+0000 : X---XXXXXXXX---- ---------------- XXXXXXXXXXXXXXXX XXXXXX----------
+
+All other memory blocks unused.
+
+Program Memory Words Used: 31
+
+
+Errors   :       0
+Warnings :       3 reported,       0 suppressed
+Messages :       0 reported,       0 suppressed
+

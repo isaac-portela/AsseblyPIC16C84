@@ -1,0 +1,13 @@
+# Do NOT modify the project file manually!!
+# Version 1.0
+# Components:
+PIC pratica19a/pratica19a.asm
+Togglebuttons
+LEDS
+# Connections:
+1:0,0:8
+0:0,2:0
+# Connection info:
+Toggle buttons : Button 0 -> PIC 16F84 Microcontroller : RA0
+PIC 16F84 Microcontroller : RB0 -> LED Array : LED 0
+# End

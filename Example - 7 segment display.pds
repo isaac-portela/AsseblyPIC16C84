@@ -1,0 +1,35 @@
+# Do NOT modify the project file manually!!
+# Version 1.0
+# Components:
+PIC Example - 7 segment display/Example - 7 segment display.asm
+Segment7
+Logic4511
+# Connections:
+0:0,2:8
+0:1,2:9
+0:2,2:10
+0:3,2:11
+0:4,2:12
+2:0,1:0
+2:1,1:1
+2:2,1:2
+2:3,1:3
+2:4,1:4
+2:5,1:5
+2:6,1:6
+2:7,1:7
+# Connection info:
+PIC 16F84 Microcontroller : RB0 -> [logic] 4511 BCD to 7-seg decoder : Input 0
+PIC 16F84 Microcontroller : RB1 -> [logic] 4511 BCD to 7-seg decoder : Input 1
+PIC 16F84 Microcontroller : RB2 -> [logic] 4511 BCD to 7-seg decoder : Input 2
+PIC 16F84 Microcontroller : RB3 -> [logic] 4511 BCD to 7-seg decoder : Input 3
+PIC 16F84 Microcontroller : RB4 -> [logic] 4511 BCD to 7-seg decoder : Enable
+[logic] 4511 BCD to 7-seg decoder : Output A -> 7 Segment : A
+[logic] 4511 BCD to 7-seg decoder : Output B -> 7 Segment : B
+[logic] 4511 BCD to 7-seg decoder : Output C -> 7 Segment : C
+[logic] 4511 BCD to 7-seg decoder : Output D -> 7 Segment : D
+[logic] 4511 BCD to 7-seg decoder : Output E -> 7 Segment : E
+[logic] 4511 BCD to 7-seg decoder : Output F -> 7 Segment : F
+[logic] 4511 BCD to 7-seg decoder : Output G -> 7 Segment : G
+[logic] 4511 BCD to 7-seg decoder : Output H -> 7 Segment : H
+# End

@@ -1,0 +1,144 @@
+gpasm-0.10.1 alpha              C:\Users\isaac\OneDrive\Documents/PIC Development Studio projects/Example - 7 segment display/Example - 7 segment display.asm3-6-2021  19:29:39           PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00001 ; Example - 7 segment display
+               00002 ;--------------------------------
+               00003 
+  00000001     00004 r               equ     0x01
+  00000000     00005 w               equ     0x00
+               00006 
+  00000000     00007 c               equ     0x00
+  00000001     00008 dc              equ     0x01
+  00000002     00009 z               equ     0x02
+  00000005     00010 RP0             equ     0x05
+               00011 
+               00012 ; Special function register in Bank 0
+  00000000     00013 INDF            equ     0x00
+  00000001     00014 TMR0            equ     0x01
+  00000003     00015 Status          equ     0x03
+  00000004     00016 FSR             equ     0x04
+  00000005     00017 PortA           equ     0x05
+  00000006     00018 PortB           equ     0x06
+  0000000B     00019 Intcon          equ     0x0B
+               00020 
+               00021 ; Special function register in Bank 1
+  00000001     00022 OptionR         equ     0x01
+  00000005     00023 TrisA           equ     0x05
+  00000006     00024 TrisB           equ     0x06
+               00025 
+  00000010     00026 TC0             equ     0x10
+  00000011     00027 TC1             equ     0x11
+  00000012     00028 TC2             equ     0x12
+               00029 
+               00030 
+               00031 ;-------------------------------------------------------------------------------
+               00032 
+Warning [205] : Found directive in column 1.
+0000           00033 org     0x00
+0000 2820      00034         goto    init
+               00035 
+               00036 ;-------------------------------------------------------------------------------
+               00037 ; Init code
+               00038 ;-------------------------------------------------------------------------------
+Warning [205] : Found directive in column 1.
+0020           00039 org     0x20
+               00040 
+0020 1683      00041 init    bsf     Status,RP0
+0021 30E0      00042         movlw   b'11100000'             ;configure PortB
+0022 0086      00043         movwf   TrisB
+0023 3000      00044         movlw   b'00000000'             ;configure PortA
+0024 0085      00045         movwf   TrisA
+0025 1283      00046         bcf     Status,RP0
+0026 0186      00047         clrf    PortB
+0027 1606      00048         bsf     PortB,4
+               00049 
+               00050 ;------------------------------------------------------------------------------
+               00051 ; Main loop
+               00052 ;------------------------------------------------------------------------------
+gpasm-0.10.1 alpha              C:\Users\isaac\OneDrive\Documents/PIC Development Studio projects/Example - 7 segment display/Example - 7 segment display.asm3-6-2021  19:29:39           PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00053 
+0028 0A86      00054 main    incf    PortB,r
+0029 0806      00055         movf    PortB,w
+002A 3C1A      00056         sublw   0x1A
+002B 1903      00057         btfsc   Status,z
+002C 0186      00058         clrf    PortB
+002D 1206      00059         bcf     PortB,4
+002E 0000      00060         nop
+002F 0000      00061         nop
+0030 1606      00062         bsf     PortB,4
+0031 2033      00063         call    delay
+0032 2828      00064         goto    main
+               00065         
+               00066 ;-----------------------------------------------------------------------------
+0033           00067 delay
+0033 3002      00068         movlw   0x02
+0034 0090      00069         movwf   TC0
+0035 30FF      00070 _1s_0   movlw   0xff
+0036 0091      00071         movwf   TC1
+0037 30FF      00072 _1s_1   movlw   0xff
+0038 0092      00073         movwf   TC2
+0039 0B92      00074 _1s_2   decfsz  TC2,r
+003A 2839      00075         goto    _1s_2
+003B 0B91      00076         decfsz  TC1,r
+003C 2837      00077         goto    _1s_1
+003D 0B90      00078         decfsz  TC0,r
+003E 2835      00079         goto    _1s_0
+003F 0008      00080         return
+               00081 
+               00082 
+               00083 
+gpasm-0.10.1 alpha              C:\Users\isaac\OneDrive\Documents/PIC Development Studio projects/Example - 7 segment display/Example - 7 segment display.asm3-6-2021  19:29:39           PAGE  3
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+FSR                               00000004
+INDF                              00000000
+Intcon                            0000000B
+OptionR                           00000001
+PortA                             00000005
+PortB                             00000006
+RP0                               00000005
+Status                            00000003
+TC0                               00000010
+TC1                               00000011
+TC2                               00000012
+TMR0                              00000001
+TrisA                             00000005
+TrisB                             00000006
+_1s_0                             00000035
+_1s_1                             00000037
+_1s_2                             00000039
+__16F84                           00000001
+c                                 00000000
+dc                                00000001
+delay                             00000033
+init                              00000020
+main                              00000028
+r                                 00000001
+w                                 00000000
+z                                 00000002
+
+
+MEMORY USAGE MAP ('X' = Used,  '-' = Unused)
+
+0000 : X--------------- ---------------- XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+
+All other memory blocks unused.
+
+Program Memory Words Used: 33
+
+
+Errors   :       0
+Warnings :       2 reported,       0 suppressed
+Messages :       0 reported,       0 suppressed
+

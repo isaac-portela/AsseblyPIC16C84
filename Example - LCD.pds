@@ -1,0 +1,46 @@
+# Do NOT modify the project file manually!!
+# Version 1.0
+# Components:
+PIC Example - LCD/Example - LCD.asm
+LCD
+# Connections:
+0:0,1:3
+0:1,1:4
+0:2,1:5
+0:3,1:6
+0:4,1:7
+0:5,1:8
+0:6,1:9
+0:7,1:10
+0:8,1:2
+0:9,1:0
+0:10,1:1
+1:3,0:0
+1:4,0:1
+1:5,0:2
+1:6,0:3
+1:7,0:4
+1:8,0:5
+1:9,0:6
+1:10,0:7
+# Connection info:
+PIC 16F84 Microcontroller : RB0 -> LCD : D0
+PIC 16F84 Microcontroller : RB1 -> LCD : D1
+PIC 16F84 Microcontroller : RB2 -> LCD : D2
+PIC 16F84 Microcontroller : RB3 -> LCD : D3
+PIC 16F84 Microcontroller : RB4 -> LCD : D4
+PIC 16F84 Microcontroller : RB5 -> LCD : D5
+PIC 16F84 Microcontroller : RB6 -> LCD : D6
+PIC 16F84 Microcontroller : RB7 -> LCD : D7
+PIC 16F84 Microcontroller : RA0 -> LCD : E
+PIC 16F84 Microcontroller : RA1 -> LCD : RS
+PIC 16F84 Microcontroller : RA2 -> LCD : R/W
+LCD : D0 -> PIC 16F84 Microcontroller : RB0 
+LCD : D1 -> PIC 16F84 Microcontroller : RB1 
+LCD : D2 -> PIC 16F84 Microcontroller : RB2 
+LCD : D3 -> PIC 16F84 Microcontroller : RB3 
+LCD : D4 -> PIC 16F84 Microcontroller : RB4 
+LCD : D5 -> PIC 16F84 Microcontroller : RB5 
+LCD : D6 -> PIC 16F84 Microcontroller : RB6 
+LCD : D7 -> PIC 16F84 Microcontroller : RB7 
+# End

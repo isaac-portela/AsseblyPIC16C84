@@ -1,0 +1,1096 @@
+gpasm-0.10.1 alpha              C:\Documents and Settings\Administrator\My Documents/PIC Development Studio projects/LCD Demo/LCD Demo.asm9-28-2007  19:13:09          PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00001 
+               00002 ; set this define for the different hardware connection options
+               00003 
+               00004 #define TYPE    2               
+               00005                 ; value 1 for icepic test hardware ( 4 bit data only )
+               00006                         ;PortB 0        E         - Enable
+               00007                         ;PortB 1        RS        - Select
+               00008                         ;PortD 2        R/_W      - Read / not write
+               00009                         ;PortB 0 - 3    D4 - D7   - Data bits
+               00010                 ; value 2 for standard pic16f84 ( 4 or eight bit data )
+               00011                         ;PortA 0        E         - Enable
+               00012                         ;PortA 1        RS        - Select
+               00013                         ;PortA 2        R/_W      - Read / not write
+               00014                         ;PortB 0 - 7    D0 - D7   - Data bits
+               00015 
+               00016 ; set this define to the number of data bits for each transfer ( 4 or 8 )
+               00017 
+               00018 #define DATABT  4
+               00019 
+               00020 
+               00021 ; Control bits
+               00022 
+               00023         if      TYPE == 1
+               00024         #DEFINE RS      0X06,5                  ; Port B Bit 5 - DISPLAY CONTROL RS   
+               00025         #DEFINE E       0X06,4                  ; Port B Bit 4 - DISPLAY CONTROL E   
+               00026         #DEFINE RW      0X08,0                  ; Port D Bit 0 - DISPLAY CONTROL R/_W   
+               00027         endif
+               00028         if      TYPE == 2
+               00029         #DEFINE RS      0X05,1                  ; Port B Bit 5 - DISPLAY CONTROL RS   
+               00030         #DEFINE E       0X05,0                  ; Port B Bit 4 - DISPLAY CONTROL E   
+               00031         #DEFINE RW      0X05,2                  ; Port D Bit 0 - DISPLAY CONTROL R/_W   
+               00032         endif
+               00033 
+  00000001     00034 r               equ     0x01
+  00000000     00035 w               equ     0x00
+  00000000     00036 c               equ     0x00
+  00000001     00037 dc              equ     0x01
+  00000002     00038 z               equ     0x02
+  00000005     00039 RP0             equ     0x05
+               00040 
+               00041 ; Special function register in Bank 0
+  00000000     00042 INDF            equ     0x00
+  00000001     00043 TMR0            equ     0x01
+  00000002     00044 PCL             equ     0x02            ; PC lo byte
+  00000003     00045 Status          equ     0x03
+  00000004     00046 FSR             equ     0x04
+  00000005     00047 PortA           equ     0x05
+  00000006     00048 PortB           equ     0x06
+  00000007     00049 PortC           equ     0x07
+  00000008     00050 PortD           equ     0x08
+  0000000A     00051 PCLATH          equ     0x0A            ; PC hi byte
+  0000000B     00052 Intcon          equ     0x0B
+               00053 
+               00054 
+gpasm-0.10.1 alpha              C:\Documents and Settings\Administrator\My Documents/PIC Development Studio projects/LCD Demo/LCD Demo.asm9-28-2007  19:13:09          PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00055 ; Special function register in Bank 1
+  00000001     00056 OptionR         equ     0x01
+  00000005     00057 TrisA           equ     0x05
+  00000006     00058 TrisB           equ     0x06
+  00000007     00059 TrisC           equ     0x07
+  00000008     00060 TrisD           equ     0x08
+               00061 
+               00062 ; Interrupt bits
+  00000007     00063 GIE             equ     7       ;Global Interrupt enabled/disable
+  00000004     00064 INTE            equ     4       ;RB0 interrupten enabled/disable
+  00000001     00065 INTF            equ     1       ;RB0 interrupten has occured
+  00000005     00066 T0IE            equ     5       ;TMR0 int enabled/disable
+  00000002     00067 T0IF            equ     2       ;TMR0 int has occured
+               00068 
+               00069 ; EEPROM registers
+  00000008     00070 EEcon1          equ     0x08    ;EEPROM control register 1
+  00000009     00071 EEcon2          equ     0x09    ;EEPROM control register 1
+  00000008     00072 EEdata          equ     0x08    ;EEPROM data register
+  00000009     00073 EEadr           equ     0x09    ;EEPROM address register
+               00074 
+               00075 ; EEProm bits
+  00000000     00076 RD              equ     0x00
+  00000001     00077 WR              equ     0x01
+  00000002     00078 WREN            equ     0x02
+               00079 
+               00080 ; File registers
+  0000000C     00081 w_temp          equ     0x0C    ; register used in interrupt handling
+  0000000D     00082 status_temp     equ     0x0D
+               00083 
+               00084 ;       STATUS REGISTER BITS
+               00085         #DEFINE CARRY   0X03,0                   ;CARRY FLAG
+               00086         #DEFINE DCARRY  0X03,1                   ;DECIMAL CARRY FLAG
+               00087         #DEFINE ZERO    0X03,2                   ;ZERO FLAG
+               00088         #DEFINE RPAGE   0X03,5                   ;REGISTER PAGE SELECT
+               00089 ;;
+               00090 ;       OPTION REGISTER BITS
+               00091         #DEFINE PS0     0X01,0                  ;P1 - PRESCALER SELECT VALUES
+               00092         #DEFINE PS1     0X01,1                  ;      ''
+               00093         #DEFINE PS2     0X01,2                  ;      ''
+               00094         #DEFINE PSA     0X01,3                  ;P1 - PRESCALER ASSIGNMENT 
+               00095         #DEFINE RTE     0X01,4                  ;P1 - TMR0 EDGE (WHEN EXTERNL)
+               00096         #DEFINE RTS     0X01,5                  ;P1 - TMR0 SOURCE
+               00097         #DEFINE INTEDG  0X01,6                  ;P1 - B0 INTERRUPT EDGE  
+               00098         #DEFINE RBPU    0X01,7                  ;P1 - PORTB WEAK PULL UPS
+               00099 
+               00100 
+               00101         #DEFINE INDEX   0030                    ;PAGE 0  STRING LOWER ADDRESS
+               00102         #DEFINE TMPW    0031                    ;PAGE 0  TEMP W STORE FOR DISP.
+               00103         #DEFINE DELAY0  0032                    ;PAGE 0  DELAY LOOP COUNTER
+               00104         #DEFINE DELAY1  0033                    ;PAGE 0  DELAY LOOP COUNTER
+               00105         #DEFINE DELAY2  0034                    ;PAGE 0  DELAY LOOP COUNTER
+               00106         #define DELAY3  0035
+               00107         #DEFINE OFSET   0036                    ;PAGE 0  STRING CHR. OFFSET
+               00108         #DEFINE FSTCH   0037
+gpasm-0.10.1 alpha              C:\Documents and Settings\Administrator\My Documents/PIC Development Studio projects/LCD Demo/LCD Demo.asm9-28-2007  19:13:09          PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00109         #DEFINE NXTCH   0038
+               00110         #DEFINE CCNT    0039
+               00111         #DEFINE MYOPTS  003A                    ; used for my occasional flags
+               00112         #define RSSAVE  0x3a,0                  ;Saved RS setting ( 0 or 1 )
+               00113         #define SMSG    0x3a,1                  ; slow message o/p
+               00114         #DEFINE RXD     003B
+               00115         #define TCNT    003C
+               00116 ;-----------------------------------------------------------------------------
+0000           00117         org     0x00
+0000 2820      00118         goto    init
+               00119 ;-------------------------------------------------------------------------------
+               00120 ; Interrupt handling
+               00121 ;-------------------------------------------------------------------------------
+0004           00122         org     0x04
+               00123 
+0004 008C      00124 push    movwf   w_temp                  ;save w & status 
+0005 0E03      00125         swapf   Status,W
+0006 008D      00126         movwf   status_temp
+               00127         
+               00128 
+0007 0E0D      00129 pop     swapf   status_temp,W           ; restore w & status
+0008 0083      00130         movwf   Status
+0009 0E8C      00131         swapf   w_temp, r
+000A 0E0C      00132         swapf   w_temp, W
+000B 0009      00133         retfie
+               00134 
+               00135 
+               00136 ;-------------------------------------------------------------------------------
+               00137 ; Init code
+               00138 ;-------------------------------------------------------------------------------
+0020           00139         org     0x20
+               00140 
+               00141 ;SET UP PORT I/O AND OPTION REGISTER CONTENTS
+               00142 
+0020 1683      00143 init    bsf     RPAGE                           ;SET PAGE 1
+               00144 ;
+0021 3000      00145         movlw   B'00000000'                     ;SET A TO ALL OUTPUT
+0022 0085      00146         movwf   TrisA                           
+0023 3000      00147         movlw   B'00000000'                     ;SET B TO ALL OUTPUT
+0024 0086      00148         movwf   TrisB
+               00149         if      TYPE == 1
+               00150         movlw   B'00000000'                     ;SET C TO ALL OUTPUT
+               00151         movwf   TrisC
+               00152         movlw   B'00000000'                     ;SET D TO ALL OUTPUT
+               00153         movwf   TrisD
+               00154         endif
+               00155 ;
+0025 1781      00156         bsf     RBPU                            ;DISABLE PortB PULL UPS
+0026 1701      00157         bsf     INTEDG                          ;SET B0 INT ON RISING EDGE
+0027 1281      00158         bcf     RTS                             ;TIMER COUNTS INT CLOCK    
+0028 1201      00159         bcf     RTE                             ;LOW-HIGH INT EDGE (UNUSED)
+0029 1181      00160         bcf     PSA                             ;ASSIGN PRESCALER TO TIMER
+002A 1401      00161         bsf     PS0                             ;SET UP PRESCALER TO /256
+002B 1481      00162         bsf     PS1                             ;           ''
+gpasm-0.10.1 alpha              C:\Documents and Settings\Administrator\My Documents/PIC Development Studio projects/LCD Demo/LCD Demo.asm9-28-2007  19:13:09          PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+002C 1501      00163         bsf     PS2                             ;           ''
+               00164 ;
+002D 1283      00165         bcf     RPAGE                           ;BACK TO PAGE 0
+               00166 
+               00167 ;                            PAGE 1
+               00168 ;*****************************************************************************
+               00169 ;
+               00170 ;SET UP OPENING DISPLAY
+               00171 ;
+               00172 ;Before writing to the display it must be set up for 4 bit operation by 
+               00173 ;sending the string of code in subroutine 'INILCD'.
+               00174 ;
+               00175 ;Opening display is located starting at 03 00 hex in the ROM area
+               00176 ;INDEX is loaded with the lower start byte.
+               00177 ;
+               00178 ;
+002E 1105      00179         bcf     RW                              ; clear R/_W line
+002F 213A      00180         call    INILCD                          ;INITIALISE LCD
+0030 10BA      00181         bcf     SMSG
+0031 3000      00182         movlw   0X00                            ;LOAD DATA STRING POINTER
+0032 00B0      00183         movwf   INDEX                           ;FOR LOWER ADDRESS BYTE
+0033 217C      00184         call    MESGE                           ;DISPLAY FIRST MESSAGE
+0034 2124      00185         call    PAUSE3                          ;LONG PAUSE
+               00186 ;---------------------------------------------------------------------------------------
+               00187 ; CGRAM demo
+               00188 ;---------------------------------------------------------------------------------------
+0035 3040      00189         movlw   0x40                            ; set cgram address
+0036 214A      00190         call    CONT1
+               00191 
+0037 3011      00192         movlw   0x11
+0038 2148      00193         call    CONT2
+0039 300A      00194         movlw   0x0a
+003A 2148      00195         call    CONT2
+003B 301F      00196         movlw   0x1F
+003C 2148      00197         call    CONT2
+003D 3004      00198         movlw   0x04
+003E 2148      00199         call    CONT2
+003F 301F      00200         movlw   0x1F
+0040 2148      00201         call    CONT2
+0041 3004      00202         movlw   0x04
+0042 2148      00203         call    CONT2
+0043 3004      00204         movlw   0x04
+0044 2148      00205         call    CONT2
+0045 3000      00206         movlw   0x00
+0046 2148      00207         call    CONT2
+               00208 
+0047 30FF      00209         movlw   0xff
+0048 2148      00210         call    CONT2
+0049 30FF      00211         movlw   0xff
+004A 2148      00212         call    CONT2
+004B 30FF      00213         movlw   0xff
+004C 2148      00214         call    CONT2
+004D 3000      00215         movlw   0x00
+004E 2148      00216         call    CONT2
+gpasm-0.10.1 alpha              C:\Documents and Settings\Administrator\My Documents/PIC Development Studio projects/LCD Demo/LCD Demo.asm9-28-2007  19:13:09          PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+004F 3000      00217         movlw   0x00
+0050 2148      00218         call    CONT2
+0051 3000      00219         movlw   0x00
+0052 2148      00220         call    CONT2
+0053 3000      00221         movlw   0x00
+0054 2148      00222         call    CONT2
+0055 3000      00223         movlw   0x00
+0056 2148      00224         call    CONT2
+               00225 
+               00226 
+0057 301F      00227         movlw   0x1f
+0058 2148      00228         call    CONT2
+0059 301F      00229         movlw   0x1f
+005A 2148      00230         call    CONT2
+005B 301F      00231         movlw   0x1f
+005C 2148      00232         call    CONT2
+005D 3011      00233         movlw   0x11
+005E 2148      00234         call    CONT2
+005F 3011      00235         movlw   0x11
+0060 2148      00236         call    CONT2
+0061 301F      00237         movlw   0x1f
+0062 2148      00238         call    CONT2
+0063 301F      00239         movlw   0x1f
+0064 2148      00240         call    CONT2
+0065 301F      00241         movlw   0x1f
+0066 2148      00242         call    CONT2
+               00243 
+0067 3011      00244         movlw   0x11
+0068 2148      00245         call    CONT2
+0069 3011      00246         movlw   0x11
+006A 2148      00247         call    CONT2
+006B 30FF      00248         movlw   0xff
+006C 2148      00249         call    CONT2
+006D 3000      00250         movlw   0x00
+006E 2148      00251         call    CONT2
+006F 3000      00252         movlw   0x00
+0070 2148      00253         call    CONT2
+0071 3000      00254         movlw   0x00
+0072 2148      00255         call    CONT2
+0073 3000      00256         movlw   0x00
+0074 2148      00257         call    CONT2
+0075 3000      00258         movlw   0x00
+0076 2148      00259         call    CONT2
+               00260 
+0077 3004      00261         movlw   0x04
+0078 2148      00262         call    CONT2
+0079 3002      00263         movlw   0x02
+007A 2148      00264         call    CONT2
+007B 3011      00265         movlw   0x11
+007C 2148      00266         call    CONT2
+007D 3007      00267         movlw   0x07
+007E 2148      00268         call    CONT2
+007F 3011      00269         movlw   0x11
+0080 2148      00270         call    CONT2
+gpasm-0.10.1 alpha              C:\Documents and Settings\Administrator\My Documents/PIC Development Studio projects/LCD Demo/LCD Demo.asm9-28-2007  19:13:09          PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+0081 3002      00271         movlw   0x02
+0082 2148      00272         call    CONT2
+0083 3004      00273         movlw   0x04
+0084 2148      00274         call    CONT2
+0085 3000      00275         movlw   0x00
+0086 2148      00276         call    CONT2
+               00277 
+0087 3011      00278         movlw   0x11
+0088 2148      00279         call    CONT2
+0089 3000      00280         movlw   0x00
+008A 2148      00281         call    CONT2
+008B 3004      00282         movlw   0x04
+008C 2148      00283         call    CONT2
+008D 3004      00284         movlw   0x04
+008E 2148      00285         call    CONT2
+008F 3015      00286         movlw   0x15
+0090 2148      00287         call    CONT2
+0091 300A      00288         movlw   0x0a
+0092 2148      00289         call    CONT2
+0093 3004      00290         movlw   0x04
+0094 2148      00291         call    CONT2
+0095 3000      00292         movlw   0x00
+0096 2148      00293         call    CONT2
+               00294 
+0097 3080      00295         movlw   0x80                            ; set dram address
+0098 214A      00296         call    CONT1
+               00297 
+               00298 
+0099 3001      00299         movlw   0x01                            ;clear display
+009A 214A      00300         call    CONT1                           ;
+009B 3066      00301         movlw   0x66
+009C 00B0      00302         movwf   INDEX
+009D 217C      00303         call    MESGE                           ;DISPLAY MESSAGE
+009E 2124      00304         call    PAUSE3                          ;LONG PAUSE
+               00305 ;-----------------------------------------------------------------------------------------------
+               00306 ; 5 x 10 demo
+               00307 ;-----------------------------------------------------------------------------------------------
+009F 3001      00308         movlw   0x01                            ;clear display
+00A0 214A      00309         call    CONT1                           ;
+               00310         if      DATABT == 4
+00A1 3024      00311         movlw   0x24                            ;function set for 4 bit option
+               00312         else
+               00313         movlw   0x34                            ;function set for 8 bit option
+               00314         endif
+00A2 214A      00315         call    CONT1
+00A3 300F      00316         movlw   0x0F
+00A4 214A      00317         call    CONT1 
+00A5 3076      00318         movlw   0x76
+00A6 00B0      00319         movwf   INDEX
+00A7 217C      00320         call    MESGE                           ;DISPLAY MESSAGE
+00A8 30E2      00321         movlw   0xe2
+00A9 2148      00322         call    CONT2
+00AA 30E4      00323         movlw   0xe4
+00AB 2148      00324         call    CONT2
+gpasm-0.10.1 alpha              C:\Documents and Settings\Administrator\My Documents/PIC Development Studio projects/LCD Demo/LCD Demo.asm9-28-2007  19:13:09          PAGE  7
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+00AC 30E6      00325         movlw   0xe6
+00AD 2148      00326         call    CONT2
+00AE 30E7      00327         movlw   0xe7
+00AF 2148      00328         call    CONT2
+00B0 30EA      00329         movlw   0xea
+00B1 2148      00330         call    CONT2
+00B2 30F0      00331         movlw   0xf0
+00B3 2148      00332         call    CONT2
+00B4 30F1      00333         movlw   0xf1
+00B5 2148      00334         call    CONT2
+00B6 30F9      00335         movlw   0xf9
+00B7 2148      00336         call    CONT2
+00B8 30FF      00337         movlw   0xff
+00B9 2148      00338         call    CONT2
+00BA 3020      00339         movlw   ' '
+00BB 2148      00340         call    CONT2
+               00341 
+00BC 2124      00342         call    PAUSE3                          ;LONG PAUSE
+               00343 
+               00344         if      DATABT == 4
+00BD 3028      00345         movlw   0x28                            ;function set for 4 bit option
+               00346         else
+               00347         movlw   0x38                            ;function set for 8 bit option
+               00348         endif
+00BE 214A      00349         call    CONT1
+               00350 ;----------------------------------------------------------------------------------
+               00351 ; movement demo
+               00352 ;----------------------------------------------------------------------------------
+00BF 3001      00353         movlw   0x01                            ;clear display
+00C0 214A      00354         call    CONT1                           ;
+00C1 3090      00355         movlw   0x90                            ;cursor to row 0 col 16
+00C2 214A      00356         call    CONT1                           ;
+00C3 3048      00357         movlw   'H'
+00C4 2148      00358         call    CONT2
+00C5 3065      00359         movlw   'e'
+00C6 2148      00360         call    CONT2
+00C7 306C      00361         movlw   'l'
+00C8 2148      00362         call    CONT2
+00C9 306C      00363         movlw   'l'
+00CA 2148      00364         call    CONT2
+00CB 306F      00365         movlw   'o'
+00CC 2148      00366         call    CONT2
+               00367 
+00CD 3008      00368         MOVLW   8                                
+00CE 00BC      00369         MOVWF   TCNT                            
+00CF 3018      00370 shft1   MOVLW   0x18                            ;Shift display right
+00D0 214A      00371         CALL    CONT1                          
+00D1 212A      00372         CALL    PAUSE2
+00D2 0BBC      00373         DECFSZ  TCNT, 1                         ;DECREMENT COUNT
+00D3 28CF      00374         GOTO    shft1                           ;AND LOOP UNTIL IT IS ZERO
+               00375 
+00D4 30C8      00376         movlw   0xC8                            ;cursor to row 1 col 8
+00D5 214A      00377         call    CONT1                           ;
+               00378 
+gpasm-0.10.1 alpha              C:\Documents and Settings\Administrator\My Documents/PIC Development Studio projects/LCD Demo/LCD Demo.asm9-28-2007  19:13:09          PAGE  8
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+00D6 300F      00379         movlw   0x0F                            ;cursor on and blink
+00D7 214A      00380         call    CONT1                           ;
+               00381 
+               00382 
+00D8 14BA      00383         bsf     SMSG
+00D9 3034      00384         movlw   0X34                            ;LOAD DATA STRING POINTER
+00DA 00B6      00385         movwf   OFSET                           ;FOR LOWER ADDRESS BYTE
+00DB 2180      00386         call    MESGE1                          ;DISPLAY MESSAGE
+               00387 
+00DC 3007      00388         movlw   0x07                            ; shift display on input
+00DD 214A      00389         call    CONT1                           ;
+               00390 
+00DE 3044      00391         movlw   44
+00DF 00B6      00392         movwf   OFSET
+00E0 2180      00393         call    MESGE1
+               00394  
+00E1 30C0      00395         movlw   0xC0                            ;cursor to row 1 col 8
+00E2 214A      00396         call    CONT1                           
+00E3 3056      00397         movlw   56
+00E4 00B6      00398         movwf   OFSET
+00E5 2180      00399         call    MESGE1
+               00400 
+00E6 2124      00401         call    PAUSE3
+               00402 
+00E7 3006      00403         movlw   0x06                            ; shift cursor on input
+00E8 214A      00404         call    CONT1                           ;
+00E9 300C      00405         movlw   0x0C                            ;cursor off
+00EA 214A      00406         call    CONT1                           ;
+               00407 
+               00408 ;------------------------------------------------------------------------------
+               00409 ; Main loop
+               00410 ;------------------------------------------------------------------------------
+               00411 
+00EB 3001      00412 main    movlw   0x01                            ;clear display
+00EC 214A      00413         call    CONT1                           ;
+00ED 10BA      00414         bcf     SMSG
+00EE 3021      00415         movlw   0X21                             
+00EF 00B0      00416         movwf   INDEX                            
+00F0 217C      00417         call    MESGE   
+00F1 3000      00418 displ1  movlw   0x00
+00F2 00B7      00419         movwf   FSTCH                           ; initialise first character
+00F3 3010      00420 displ2  movlw   0x10                            ; initialise character count
+00F4 00B9      00421         movwf   CCNT
+00F5 30C0      00422         movlw   0xC0                            ;set cursor to row 1 col 0
+00F6 214A      00423         call    CONT1                          
+00F7 0837      00424         movf    FSTCH,0
+00F8 00B8      00425         movwf   NXTCH                           ; set next character
+00F9 0838      00426 displ3  movf    NXTCH,0
+00FA 2148      00427         call    CONT2
+00FB 0AB8      00428         incf    NXTCH,1
+00FC 0BB9      00429         decfsz  CCNT,1
+00FD 28F9      00430         goto    displ3
+00FE 0AB7      00431         incf    FSTCH,1
+00FF 212F      00432         call    PAUSE1
+gpasm-0.10.1 alpha              C:\Documents and Settings\Administrator\My Documents/PIC Development Studio projects/LCD Demo/LCD Demo.asm9-28-2007  19:13:09          PAGE  9
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+0100 30FF      00433         movlw   0xff
+0101 0237      00434         subwf   FSTCH,0
+0102 1903      00435         btfsc   ZERO
+0103 28F1      00436         goto    displ1
+0104 212A      00437         call    PAUSE2
+0105 28F3      00438         goto    displ2
+               00439         
+               00440 ;-----------------------------------------------------------------------------
+               00441 ; Wait for busy flag to clear
+               00442 ;-----------------------------------------------------------------------------
+               00443 
+0106 1683      00444 wbusy   bsf     RPAGE                           ;SET PAGE 1
+               00445         if      TYPE == 1
+               00446         movlw   B'00001111'                     ;SET 
+               00447         endif
+               00448         if      TYPE == 2
+               00449         if      DATABT == 4
+0107 30F0      00450         movlw   B'11110000'                     ;SET 
+               00451         else
+               00452         movlw   B'11111111'
+               00453         endif
+               00454         endif
+0108 0086      00455         movwf   TrisB
+0109 1283      00456         bcf     RPAGE   
+010A 1505      00457         bsf     RW
+010B 1085      00458         bcf     RS
+010C 1405      00459 wbusy1  bsf     E
+010D 2135      00460         call    PAUSE
+010E 0806      00461         movf    PortB,0
+               00462         if      DATABT == 4
+               00463         if      TYPE == 1
+               00464         andlw   0x0f
+               00465         movwf   RXD
+               00466         swapf   RXD,1
+               00467         endif
+               00468         if      TYPE == 2
+010F 39F0      00469         andlw   0xF0
+0110 00BB      00470         movwf   RXD
+               00471         endif
+0111 1005      00472         bcf     E
+0112 2135      00473         call    PAUSE
+0113 1405      00474         bsf     E
+0114 2135      00475         call    PAUSE
+0115 0806      00476         movf    PortB,0
+               00477         if      TYPE == 1
+               00478         andlw   0x0f
+               00479         iorwf   RXD,1
+               00480         endif
+               00481         if      TYPE == 2
+0116 39F0      00482         andlw   0xf0
+0117 0EBB      00483         swapf   RXD,1
+0118 04BB      00484         iorwf   RXD,1
+0119 0EBB      00485         swapf   RXD,1
+               00486         endif
+gpasm-0.10.1 alpha              C:\Documents and Settings\Administrator\My Documents/PIC Development Studio projects/LCD Demo/LCD Demo.asm9-28-2007  19:13:09          PAGE 10
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00487         else
+               00488         movwf   RXD
+               00489         endif
+011A 1005      00490         bcf     E
+011B 2135      00491         call    PAUSE
+011C 1BBB      00492         btfsc   RXD,7                   
+011D 290C      00493         goto    wbusy1
+011E 1105      00494         bcf     RW
+               00495 
+011F 1683      00496         bsf     RPAGE                           ;SET PAGE 1
+0120 3000      00497         movlw   B'00000000'                     ;SET 
+0121 0086      00498         movwf   TrisB
+0122 1283      00499         bcf     RPAGE   
+0123 0008      00500         return
+               00501 
+               00502 ;-------------------------------------------------------------------------------
+               00503 ; Waiters
+               00504 ;-------------------------------------------------------------------------------
+               00505 
+0124 3018      00506 PAUSE3  movlw   0x18                            
+0125 00B5      00507         movwf   DELAY3                        
+0126 212A      00508 DEL3LP  call    PAUSE2                       
+0127 0BB5      00509         decfsz  DELAY3, 1                    
+0128 2926      00510         goto    DEL3LP                      
+0129 0008      00511         return
+               00512 ;
+               00513         if      TYPE == 1
+012A           00514 PAUSE2  movlw   0xf0                            
+               00515         endif
+               00516         if      TYPE == 2
+012A 3040      00517 PAUSE2  movlw   0x40
+               00518         endif
+012B 00B4      00519         movwf   DELAY2                          
+012C 212F      00520 DEL2LP  call    PAUSE1                        
+012D 0BB4      00521         decfsz  DELAY2, 1                   
+012E 292C      00522         goto    DEL2LP                      
+               00523 ;
+012F 3040      00524 PAUSE1  movlw   0x40                            ;MOVE SET UP PAUSE DELAY
+0130 00B3      00525         movwf   DELAY1                          ;TO DELAY1 REGISTER
+0131 2135      00526 DEL1LP  call    PAUSE                           ;call SECOND LOOP
+0132 0BB3      00527         decfsz  DELAY1, 1                       ;DECREMENT SAMPLE PULSE COUNT
+0133 2931      00528         goto    DEL1LP                          ;AND LOOP UNTIL IT IS ZERO
+0134 0008      00529         return
+               00530 ;
+0135 3020      00531 PAUSE   movlw   0x20                            ;MOVE SET UP PAUSE DELAY
+               00532   
+0136 00B2      00533         movwf   DELAY0                          ;TO DELAY0 REGISTER
+0137 0BB2      00534 DELLP   decfsz  DELAY0, 1                       ;DECREMENT SAMPLE PULSE COUNT
+0138 2937      00535         goto    DELLP                           ;AND LOOP UNTIL IT IS ZERO
+0139 0008      00536         return             
+               00537 ;-----------------------------------------------------------------------------------
+               00538 ; Initialise the lcd
+               00539 ;-----------------------------------------------------------------------------------
+013A 3033      00540 INILCD  movlw   0x33                            ;
+gpasm-0.10.1 alpha              C:\Documents and Settings\Administrator\My Documents/PIC Development Studio projects/LCD Demo/LCD Demo.asm9-28-2007  19:13:09          PAGE 11
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+013B 2168      00541         call    CONT5
+               00542 ;
+013C 3032      00543         movlw   0x32                            ;
+013D 2168      00544         call    CONT5
+               00545 ;                      
+               00546         if      DATABT == 4
+013E 3028      00547         movlw   0x28                            ;function set for 4 bit option
+               00548         else
+               00549         movlw   0x38                            ;function set for 8 bit option
+               00550         endif
+013F 214D      00551         call    CONT4                           ;8or4 bit mode 2 lines in 4 bit data mode
+               00552 ;
+0140 3006      00553         movlw   0x06                            ;entry mode set
+0141 214A      00554         call    CONT1                           ;cursor increments on write
+               00555 ;
+0142 300C      00556         movlw   0x0C                            ;display on off 
+0143 214A      00557         call    CONT1                           ;display on, cursor off, blink on
+               00558 ;
+0144 3001      00559         movlw   0x01                            ;clear display
+0145 214A      00560         call    CONT1                           ;move cursor to home
+               00561 
+0146 0008      00562         return
+               00563 
+               00564 ;----------------------------------------------------------------------------
+               00565 ; Send binary value in W as a display digit
+               00566 ;----------------------------------------------------------------------------
+0147 3E30      00567 CONT2D  addlw   0X30
+               00568 ;
+               00569 ;----------------------------------------------------------------------------
+               00570 ; Send byte in W as data
+               00571 ;----------------------------------------------------------------------------
+0148 1485      00572 CONT2   bsf     RS                              ;SET RS HIGH
+0149 294B      00573         goto    CONT1A                          ; output the data
+               00574 
+               00575 
+               00576 ;--------------------------------------------------------------------------
+               00577 ; Send 8 BIT data in W to lcd as a command
+               00578 ;--------------------------------------------------------------------------
+014A 1085      00579 CONT1   bcf     RS                              ;SET RS TO ZERO 
+014B 1005      00580 CONT1A  bcf     E                               ;AND E
+               00581         if      DATABT == 8
+               00582         movwf   PortB                           ;WRITE DATA TO PortB
+               00583         call    PAUSE  
+               00584         bsf     E                               ;SET E HIGH
+               00585         call    PAUSE
+               00586         bcf     E                               ;FALLING E LATCHES DATA
+               00587         call    wbusy                           ;DELAY 
+               00588 
+               00589         return                                  ;BACK FROM SUBROUTINE
+               00590         else
+014C 294F      00591         goto    CONT4A
+               00592         endif
+               00593 ;------------------------------------------------------------------------
+               00594 ; Send contents of W as data assuming 4 bit mode
+gpasm-0.10.1 alpha              C:\Documents and Settings\Administrator\My Documents/PIC Development Studio projects/LCD Demo/LCD Demo.asm9-28-2007  19:13:09          PAGE 12
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00595 ;-------------------------------------------------------------------------
+014D 1085      00596 CONT4   bcf     RS                              ;SET RS TO ZERO 
+014E 1005      00597         bcf     E                               ;AND E
+014F 00B1      00598 CONT4A  movwf   TMPW                            ;MOVE W TO TEMP STORE
+               00599 
+0150 103A      00600         bcf     RSSAVE
+0151 1885      00601         btfsc   RS                              ; j if RS clear
+0152 143A      00602         BSF     RSSAVE                          ; else set RSSAVE
+0153 0831      00603         movf    TMPW,0
+               00604         if      TYPE == 1
+               00605         swapf   TMPW,0                          ;PUT MSB TO D0-3 IN W
+               00606         andlw   0X0F                            ;MASK UPPER BITS
+               00607         endif
+               00608         if      TYPE == 2
+0154 39F0      00609         andlw   0xF0
+               00610         endif
+0155 0086      00611         movwf   PortB                           ;WRITE DATA TO PortB
+0156 183A      00612         btfsc   RSSAVE
+0157 1485      00613         bsf     RS                              ; cause it might be in PortB
+0158 2135      00614         call    PAUSE  
+0159 1405      00615         bsf     E                               ;SET E HIGH
+015A 2135      00616         call    PAUSE
+015B 1005      00617         bcf     E                               ;FALLING E LATCHES DATA
+015C 2135      00618         call    PAUSE                           ;DELAY 
+               00619 ;
+               00620         if      TYPE == 1
+               00621         movf    TMPW,0                          ;PUT LSB TO D0-3
+               00622         andlw   0X0F                            ;MASK UPPER BITS
+               00623         endif
+               00624         if      TYPE == 2
+015D 0E31      00625         swapf   TMPW,0
+015E 39F0      00626         andlw   0xf0
+               00627         endif
+015F 0086      00628         movwf   PortB                           ;WRITE DATA TO PortB
+0160 183A      00629         btfsc   RSSAVE
+0161 1485      00630         bsf     RS                              ; cause RS might be in PortB
+0162 2135      00631         call    PAUSE  
+0163 1405      00632         bsf     E                               ;SET E HIGH
+0164 2135      00633         call    PAUSE
+0165 1005      00634         bcf     E                               ;FALLING E LATCHES DATA
+0166 2106      00635         call    wbusy                           ;DELAY 
+               00636 
+0167 0008      00637         return                                  ;BACK FROM SUBROUTINE
+               00638 
+               00639 ;----------------------------------------------------------------------------------------------------
+               00640 ; Send contents of W as data in initialise phase ( no busy flag check - just wait )
+               00641 ;----------------------------------------------------------------------------------------------------
+0168 1085      00642 CONT5   bcf     RS                              ;SET RS TO ZERO 
+0169 1005      00643         bcf     E                               ;AND E
+016A 00B1      00644         movwf   TMPW                            ;MOVE W TO TEMP STORE
+               00645         if      TYPE == 1
+               00646         swapf   TMPW,0                          ;PUT MSB TO D0-3 IN W
+               00647         andlw   0X0F                            ;MASK UPPER BITS
+               00648         endif
+gpasm-0.10.1 alpha              C:\Documents and Settings\Administrator\My Documents/PIC Development Studio projects/LCD Demo/LCD Demo.asm9-28-2007  19:13:09          PAGE 13
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+               00649         if      TYPE == 2
+016B 39F0      00650         andlw   0xF0
+               00651         endif
+016C 0086      00652         movwf   PortB                           ;WRITE DATA TO PortB
+016D 2135      00653         call    PAUSE  
+016E 1405      00654         bsf     E                               ;SET E HIGH
+016F 2135      00655         call    PAUSE
+0170 1005      00656         bcf     E                               ;FALLING E LATCHES DATA
+0171 2135      00657         call    PAUSE                           ;DELAY 
+               00658 ;
+0172 0831      00659         movf    TMPW,0                          ;PUT LSB TO D0-3
+               00660         if      TYPE == 1
+               00661         movf    TMPW,0                          ;PUT LSB TO D0-3
+               00662         andlw   0X0F                            ;MASK UPPER BITS
+               00663         endif
+               00664         if      TYPE == 2
+0173 0E31      00665         swapf   TMPW,0
+0174 39F0      00666         andlw   0xf0
+               00667         endif
+               00668 ;
+0175 0086      00669         movwf   PortB                           ;WRITE DATA TO PortB
+0176 2135      00670         call    PAUSE  
+0177 1405      00671         bsf     E                               ;SET E HIGH
+0178 2135      00672         call    PAUSE
+0179 1005      00673         bcf     E                               ;FALLING E LATCHES DATA
+017A 2135      00674         call    PAUSE                           ;DELAY 
+               00675 
+017B 0008      00676         return                                  ;BACK FROM SUBROUTINE
+               00677 
+               00678 
+               00679 ;-----------------------------------------------------------------------------
+               00680 ; Send Alphanumeric string pointed by index
+               00681 ;-----------------------------------------------------------------------------
+017C 3002      00682 MESGE   movlw   0x02                            ;cursor home
+017D 214A      00683         call    CONT1                           ;without clearing display
+               00684 ;
+017E 0830      00685         movf    INDEX, 0                        ;LOAD START POINTER
+017F 00B6      00686         movwf   OFSET                           ;TO TABLE OFFSET REGISTER
+0180 22FC      00687 MESGE1  call    DIGIT                           ;GET DIGIT FROM TABLE INTO W
+0181 0AB6      00688         incf    OFSET,1                         ;STEP ON TO NEXT DATA BYTE
+0182 00B1      00689         movwf   TMPW                            ;HOLD W VALUE FOR E O M TEST
+0183 3A0A      00690         xorlw   0X0A                            ;IS VALUE END OF MESSAGE CODE?
+0184 1903      00691         btfsc   ZERO                            ;IF SO ZERO WILL BE SET
+0185 0008      00692         return                                  ;SO return
+               00693 ;
+0186 0831      00694         movf    TMPW,0                          ;RELOAD W WITH DIGIT 
+0187 3A0D      00695         xorlw   0X0D                            ;IS VALUE END OF LINE?
+0188 1903      00696         btfsc   ZERO                            ;IF SO ZERO WILL BE SET
+0189 298F      00697         goto    NEWLIN                          ;SET CURSOR FOR NEW LINE
+               00698 ;
+018A 0831      00699         movf    TMPW,0                          ;RELOAD W WITH DIGIT 
+018B 2148      00700         call    CONT2                           ;WRITE TO DISPLAY
+018C 18BA      00701         btfsc   SMSG
+018D 212A      00702         call    PAUSE2
+gpasm-0.10.1 alpha              C:\Documents and Settings\Administrator\My Documents/PIC Development Studio projects/LCD Demo/LCD Demo.asm9-28-2007  19:13:09          PAGE 14
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+018E 2980      00703         goto    MESGE1                          ;AND LOOP 
+               00704 ;
+018F 30C0      00705 NEWLIN  movlw   0xC0                            ;SET CURSOR TO NEWLINE
+0190 214A      00706         call    CONT1                           ;BY SENDING INSTRUCTION C0 
+0191 212F      00707         call    PAUSE1                          ;
+0192 2980      00708         goto    MESGE1
+               00709 ;
+               00710 ;-------------------------------------------------------------------------------------
+               00711 ; Digit must be at a fixed address to ensure the lookup works
+               00712 ;-------------------------------------------------------------------------------------
+02FC           00713         org     02fC
+02FC 3003      00714 DIGIT   movlw   3                               ;LOAD UPPER BYTE ADDRESS
+02FD 008A      00715         movwf   PCLATH                          ;TO PC UPPER BYTE REGISTER
+02FE 0836      00716         movf    OFSET, 0                        ;GET TABLE OFFSET 
+02FF 0782      00717         addwf   PCL,1                           ;AND ADD TO PC LOWER 8 BITS
+               00718 ;
+               00719 ;       THE SUBROUTINE 'DIGIT' MUST BE LOCATED AS SHOWN
+               00720 ;       IN ORDER TO ALLOW THE 'TABLE LOOK UP' FUNCTION TO TAKE PLACE
+               00721 ;
+               00722 ;The PC (program counter) is loaded with the table address from UBBYT and 
+               00723 ;OFFSET and so execution jumps to that address, and returns with the data
+               00724 ;following the retlw instruction 
+               00725 ;Note thet the addresses are shown in hex, but the individual characters are 
+               00726 ;numbered sequentially in decimal. 
+               00727 ;
+               00728 ;                                             
+0300 344C      00729         retlw   'L'                           
+0301 3420      00730         retlw   ' '                        
+0302 3443      00731         retlw   'C'                        
+0303 3420      00732         retlw   ' '                     
+0304 3444      00733         retlw   'D'                       
+0305 3420      00734         retlw   ' '                     
+0306 3443      00735         retlw   'C'                   
+0307 346F      00736         retlw   'o'                    
+0308 346D      00737         retlw   'm'                     
+0309 3470      00738         retlw   'p'                     
+030A 346F      00739         retlw   'o'                     
+030B 346E      00740         retlw   'n'                    
+030C 3465      00741         retlw   'e'                           
+030D 346E      00742         retlw   'n'                           
+030E 3474      00743         retlw   't'                           
+030F 3420      00744         retlw   ' '                         
+0310 340D      00745         retlw   0X0D                         
+0311 3444      00746         retlw   'D'                            
+0312 3465      00747         retlw   'e'                             
+0313 346D      00748         retlw   'm'                            
+0314 346F      00749         retlw   'o'                          
+0315 3420      00750         retlw   ' '                          
+0316 3470      00751         retlw   'p'                             
+0317 3472      00752         retlw   'r'                            
+0318 346F      00753         retlw   'o'                             
+0319 3467      00754         retlw   'g'                             
+031A 3472      00755         retlw   'r'                         
+031B 3461      00756         retlw   'a'                         
+gpasm-0.10.1 alpha              C:\Documents and Settings\Administrator\My Documents/PIC Development Studio projects/LCD Demo/LCD Demo.asm9-28-2007  19:13:09          PAGE 15
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+031C 346D      00757         retlw   'm'                        
+031D 3420      00758         retlw   ' '                        
+031E 3420      00759         retlw   ' '                          
+031F 3420      00760         retlw   ' '                        
+0320 340A      00761         retlw   0X0A                         
+               00762 ;
+0321 3453      00763         retlw   'S'                          
+0322 3468      00764         retlw   'h'                         
+0323 346F      00765         retlw   'o'                         
+0324 3477      00766         retlw   'w'                          
+0325 3420      00767         retlw   ' '                           
+0326 3443      00768         retlw   'C'                         
+0327 3468      00769         retlw   'h'                        
+0328 3461      00770         retlw   'a'                         
+0329 3472      00771         retlw   'r'                          
+032A 3461      00772         retlw   'a'                           
+032B 3463      00773         retlw   'c'                      
+032C 3474      00774         retlw   't'                      
+032D 3465      00775         retlw   'e'                          
+032E 3472      00776         retlw   'r'                            
+032F 3473      00777         retlw   's'                            
+0330 3420      00778         retlw   ' '                          
+0331 340D      00779         retlw   0X0D                         
+0332 3420      00780         retlw   ' '                         
+0333 340A      00781         retlw   0X0A                         
+               00782 ;
+0334 3420      00783         retlw   ' '                           
+0335 3420      00784         retlw   ' '                           
+0336 3420      00785         retlw   ' '                         
+0337 3420      00786         retlw   ' '                          
+0338 3420      00787         retlw   ' '                          
+0339 3420      00788         retlw   ' '                          
+033A 3420      00789         retlw   ' '                          
+033B 3420      00790         retlw   ' '                          
+033C 3448      00791         retlw   'H'                           
+033D 3465      00792         retlw   'e'                          
+033E 346C      00793         retlw   'l'                           
+033F 346C      00794         retlw   'l'                        
+0340 346F      00795         retlw   'o'                           
+0341 3420      00796         retlw   ' '                          
+0342 3420      00797         retlw   ' '                           
+0343 340A      00798         retlw   0X0A                        
+               00799 ;
+0344 3469      00800         retlw   'i'                          
+0345 3473      00801         retlw   's'                       
+0346 3420      00802         retlw   ' '                          
+0347 3474      00803         retlw   't'                         
+0348 3468      00804         retlw   'h'                         
+0349 3465      00805         retlw   'e'                         
+034A 3472      00806         retlw   'r'                         
+034B 3465      00807         retlw   'e'                           
+034C 3420      00808         retlw   ' '                          
+034D 3461      00809         retlw   'a'                          
+034E 346E      00810         retlw   'n'                         
+gpasm-0.10.1 alpha              C:\Documents and Settings\Administrator\My Documents/PIC Development Studio projects/LCD Demo/LCD Demo.asm9-28-2007  19:13:09          PAGE 16
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+034F 3479      00811         retlw   'y'                           
+0350 3462      00812         retlw   'b'                           
+0351 346F      00813         retlw   'o'                          
+0352 3464      00814         retlw   'd'                           
+0353 3479      00815         retlw   'y'                            
+0354 3420      00816         retlw   ' '                      
+0355 340A      00817         retlw   0X0A           
+               00818 ;              
+0356 346F      00819         retlw   'o'                             
+0357 3475      00820         retlw   'u'                            
+0358 3474      00821         retlw   't'                           
+0359 3420      00822         retlw   ' '                           
+035A 3474      00823         retlw   't'                          
+035B 3468      00824         retlw   'h'                         
+035C 3465      00825         retlw   'e'                         
+035D 3472      00826         retlw   'r'                           
+035E 3465      00827         retlw   'e'                            
+035F 3420      00828         retlw   ' '                         
+0360 343F      00829         retlw   '?'                         
+0361 3420      00830         retlw   ' '                           
+0362 343A      00831         retlw   ':'                        
+0363 342D      00832         retlw   '-'                         
+0364 3429      00833         retlw   ')'                            
+0365 340A      00834         retlw   0X0A                         
+               00835 
+0366 3447      00836         retlw   'G'                          
+0367 3472      00837         retlw   'r'                         
+0368 3461      00838         retlw   'a'                         
+0369 3470      00839         retlw   'p'                        
+036A 3468      00840         retlw   'h'                          
+036B 3469      00841         retlw   'i'                         
+036C 3463      00842         retlw   'c'                          
+036D 3473      00843         retlw   's'                         
+036E 3420      00844         retlw   ' '                         
+036F 3400      00845         retlw   0
+0370 3401      00846         retlw   1
+0371 3402      00847         retlw   2
+0372 3403      00848         retlw   3
+0373 3404      00849         retlw   4
+0374 3405      00850         retlw   5
+0375 340A      00851         retlw   0X0A                         
+               00852 ;
+0376 3435      00853         retlw   '5'                         
+0377 3478      00854         retlw   'x'                           
+0378 3431      00855         retlw   '1'                     
+0379 3430      00856         retlw   '0'                            
+037A 3420      00857         retlw   ' '                            
+037B 340A      00858         retlw   0X0A                           
+               00859 
+gpasm-0.10.1 alpha              C:\Documents and Settings\Administrator\My Documents/PIC Development Studio projects/LCD Demo/LCD Demo.asm9-28-2007  19:13:09          PAGE 17
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+CONT1                             0000014A
+CONT1A                            0000014B
+CONT2                             00000148
+CONT2D                            00000147
+CONT4                             0000014D
+CONT4A                            0000014F
+CONT5                             00000168
+DEL1LP                            00000131
+DEL2LP                            0000012C
+DEL3LP                            00000126
+DELLP                             00000137
+DIGIT                             000002FC
+EEadr                             00000009
+EEcon1                            00000008
+EEcon2                            00000009
+EEdata                            00000008
+FSR                               00000004
+GIE                               00000007
+INDF                              00000000
+INILCD                            0000013A
+INTE                              00000004
+INTF                              00000001
+Intcon                            0000000B
+MESGE                             0000017C
+MESGE1                            00000180
+NEWLIN                            0000018F
+OptionR                           00000001
+PAUSE                             00000135
+PAUSE1                            0000012F
+PAUSE2                            0000012A
+PAUSE3                            00000124
+PCL                               00000002
+PCLATH                            0000000A
+PortA                             00000005
+PortB                             00000006
+PortC                             00000007
+PortD                             00000008
+RD                                00000000
+RP0                               00000005
+Status                            00000003
+T0IE                              00000005
+T0IF                              00000002
+TMR0                              00000001
+TrisA                             00000005
+TrisB                             00000006
+TrisC                             00000007
+TrisD                             00000008
+WR                                00000001
+WREN                              00000002
+__16F84                           00000001
+c                                 00000000
+dc                                00000001
+displ1                            000000F1
+gpasm-0.10.1 alpha              C:\Documents and Settings\Administrator\My Documents/PIC Development Studio projects/LCD Demo/LCD Demo.asm9-28-2007  19:13:09          PAGE 18
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+displ2                            000000F3
+displ3                            000000F9
+init                              00000020
+main                              000000EB
+pop                               00000007
+push                              00000004
+r                                 00000001
+shft1                             000000CF
+status_temp                       0000000D
+w                                 00000000
+w_temp                            0000000C
+wbusy                             00000106
+wbusy1                            0000010C
+z                                 00000002
+CARRY                             0X03,0                   
+CCNT                              0039
+DATABT                            4
+DCARRY                            0X03,1                   
+DELAY0                            0032                    
+DELAY1                            0033                    
+DELAY2                            0034                    
+DELAY3                            0035
+E                                 0X05,0                  
+FSTCH                             0037
+INDEX                             0030                    
+INTEDG                            0X01,6                  
+MYOPTS                            003A			
+NXTCH                             0038
+OFSET                             0036                    
+PS0                               0X01,0                  
+PS1                               0X01,1                  
+PS2                               0X01,2                  
+PSA                               0X01,3                  
+RBPU                              0X01,7                  
+RPAGE                             0X03,5                   
+RS                                0X05,1                  
+RSSAVE                            0x3a,0                  
+RTE                               0X01,4                  
+RTS                               0X01,5                  
+RW                                0X05,2                  
+RXD                               003B
+SMSG                              0x3a,1			
+TCNT                              003C
+TMPW                              0031                    
+TYPE                              2		
+ZERO                              0X03,2                   
+
+
+MEMORY USAGE MAP ('X' = Used,  '-' = Unused)
+
+0000 : X---XXXXXXXX---- ---------------- XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0040 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0080 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+00c0 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+gpasm-0.10.1 alpha              C:\Documents and Settings\Administrator\My Documents/PIC Development Studio projects/LCD Demo/LCD Demo.asm9-28-2007  19:13:09          PAGE 19
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+ 
+0100 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0140 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0180 : XXXXXXXXXXXXXXXX XXX------------- ---------------- ----------------
+02c0 : ---------------- ---------------- ---------------- ------------XXXX
+0300 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0340 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXX----
+
+All other memory blocks unused.
+
+Program Memory Words Used: 508
+
+
+Errors   :       0
+Warnings :       0 reported,       0 suppressed
+Messages :       0 reported,       0 suppressed
+
