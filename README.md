@@ -8,11 +8,8 @@ Depois clique no **open**.
 
 ![image](https://user-images.githubusercontent.com/54759116/114600084-531fee00-9c6a-11eb-95ec-11ac4c39296a.png)
 
-
+Apos isso você deve achar o arquivo **.pds** do projeto que você deseja e clicar em abrir.
  
 ![image](https://user-images.githubusercontent.com/54759116/114600297-8e222180-9c6a-11eb-8b90-bbc6df125f97.png)
-
- Apos isso você deve achar o arquivo **.pds** do projeto que você deseja e clicar em abrir.
- 
-![image](https://user-images.githubusercontent.com/54759116/114600326-95492f80-9c6a-11eb-9105-e91c8c7d76b8.png)
+![mama](https://user-images.githubusercontent.com/54759116/114600326-95492f80-9c6a-11eb-9105-e91c8c7d76b8.png)
 
